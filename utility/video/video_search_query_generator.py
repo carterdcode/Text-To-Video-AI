@@ -1,11 +1,11 @@
-from openai import OpenAI
+from g4f.client import Client as OpenAI
 import os
 import json
 import re
 from datetime import datetime
 from utility.utils import log_response,LOG_TYPE_GPT
+import requests
 
-client = OpenAI(api_key = "zu-83470c0344c74bbf58afbcba2c806c92", base_url = "https://api.zukijourney.com/v1")
 model = "gpt-4o-mini"
 
 log_directory = ".logs/gpt_logs"
@@ -66,14 +66,15 @@ Timed Captions:{}
 """.format(script,"".join(map(str,captions_timed)))
     print("Content", user_content)
     
-    response = client.chat.completions.create(
-        model= model,
-        temperature=1,
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": user_content}
-        ]
-    )
+    payload = {
+        "model": model,
+        "temperature": 0.9,
+        "messages": [{"role": "system", "content": prompt},
+                     {"role": "user", "content": user_content}]
+    }
+
+    response = requests.post("http://localhost:1337/v1/chat/completions", json=payload)    
+        
     
     text = response.choices[0].message.content.strip()
     text = re.sub('\s+', ' ', text)

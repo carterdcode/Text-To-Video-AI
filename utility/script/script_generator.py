@@ -1,10 +1,10 @@
 import os
 from openai import OpenAI
 import json
+import requests
 
 
 model = "gpt-4o-mini"
-client = OpenAI(api_key="zu-83470c0344c74bbf58afbcba2c806c92", base_url = "https://api.zukijourney.com/v1")
 
 def generate_script(template, topic):
     facts_prompt = (
@@ -61,7 +61,7 @@ def generate_script(template, topic):
     )
 
     travel_inspiration_prompt = (
-        """You are a skilled content writer for a YouTube Shorts channel, specializing in creating concise and highly engaging scripts focused on travel inspiration. Each script should last less than 50 seconds (approximately 140 words) and must awaken the wanderlust of your audience. Highlight the magic of exploring new places, cultures, and experiences, while emphasizing practicality and motivation to travel.  
+        """You are a skilled content writclser for a YouTube Shorts channel, specializing in creating concise and highly engaging scripts focused on travel inspiration. Each script should last less than 50 seconds (approximately 140 words) and must awaken the wanderlust of your audience. Highlight the magic of exploring new places, cultures, and experiences, while emphasizing practicality and motivation to travel.  
 
             When a user requests a travel topic, you will craft content that is adventurous, encouraging, and packed with value or fun facts.  
 
@@ -94,20 +94,33 @@ def generate_script(template, topic):
     else:
         prompt = facts_prompt
 
-    script = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": topic}
-            ]
-        )
-    content = script.choices[0].message.content
-    try:
-        script = json.loads(content)["script"]
-    except Exception as e:
-        json_start_index = content.find('{')
-        json_end_index = content.rfind('}')
-        print(content)
-        content = content[json_start_index:json_end_index+1]
-        script = json.loads(content)["script"]
-    return script
+    payload = {
+        "model": "gpt-4o",
+        "temperature": 0.9,
+        "messages": [{"role": "system", "content": prompt},
+                     {"role": "user", "content": topic}]
+    }
+
+    # Send the POST request to the chat completions endpoint 
+    response = requests.post("http://localhost:1337/v1/chat/completions", json=payload)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Print the response text
+        print("\n" + response.text + "\n")
+
+        content = response.json()["choices"][0]["message"]["content"]
+        
+        try:
+            script = json.loads(content)["script"]
+        except Exception as e:
+            json_start_index = content.find('{')
+            json_end_index = content.rfind('}')
+            content = content[json_start_index:json_end_index+1]
+            script = json.loads(content)["script"]
+            print("script: " + script)
+        return script
+    else:
+        print(f"Request failed with status code {response.status_code}")
+        print(" \n Response:", response.text + "\n")
+        

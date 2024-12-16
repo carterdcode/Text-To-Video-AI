@@ -8,7 +8,9 @@ from moviepy.editor import (AudioFileClip, CompositeVideoClip, CompositeAudioCli
                             TextClip, VideoFileClip)
 from moviepy.audio.fx.audio_loop import audio_loop
 from moviepy.audio.fx.audio_normalize import audio_normalize
+from moviepy.config import change_settings
 import requests
+
 
 def download_file(url, filename):
     with open(filename, 'wb') as f:
@@ -37,7 +39,7 @@ def get_output_media(audio_file_path, timed_captions, background_video_data, vid
         os.environ['IMAGEMAGICK_BINARY'] = magick_path
     else:
         os.environ['IMAGEMAGICK_BINARY'] = '/usr/bin/convert'
-    
+
     visual_clips = []
     for (t1, t2), video_url in background_video_data:
         # Download the video file
@@ -67,7 +69,7 @@ def get_output_media(audio_file_path, timed_captions, background_video_data, vid
         audio = CompositeAudioClip(audio_clips)
         video.duration = audio.duration
         video.audio = audio
-
+    print("writing video to filepath ", OUTPUT_FILE_NAME)
     video.write_videofile(OUTPUT_FILE_NAME, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
     
     # Clean up downloaded files
