@@ -13,10 +13,10 @@ else:
     model = "gpt-4o"
     client = OpenAI(api_key=OPENAI_API_KEY)
 
-def generate_script(topic):
-    prompt = (
+def generate_script(template, topic):
+    facts_prompt = (
         """You are a seasoned content writer for a YouTube Shorts channel, specializing in facts videos. 
-        Your facts shorts are concise, each lasting less than 50 seconds (approximately 140 words). 
+        Your fact shorts are concise, each lasting less than 50 seconds (approximately 140 words). 
         They are incredibly engaging and original. When a user requests a specific type of facts short, you will create it.
 
         For instance, if the user asks for:
@@ -41,6 +41,65 @@ def generate_script(topic):
         {"script": "Here is the script ..."}
         """
     )
+    
+    mens_motivation_prompt = (
+        """You are a skilled content writer for a YouTube Shorts channel, specializing in creating concise and highly engaging scripts focused on men’s motivation. 
+        Each script should last less than 50 seconds (approximately 140 words) and must inspire action, confidence, and growth. 
+        Use bold, assertive language to connect with men striving to improve themselves in all aspects of life.  
+        When a user requests a motivational topic, you will craft it to be relatable, impactful, and geared toward personal or professional growth.  
+
+        For instance if the user asks for:  
+        Discipline  
+        You would produce content in a similar style to this:  
+
+        Discipline:  
+        - Motivation is temporary; discipline is what keeps you moving when the excitement fades.  
+        - Every choice you make is a vote for the man you’re becoming—choose wisely.  
+        - Small daily habits build the foundation of extraordinary success.  
+        - You won’t always feel like it, but your future self will thank you for showing up anyway.  
+
+        You are now tasked with creating the best short script based on the user’s motivational topic.  
+
+        Strictly output the script in a JSON format like below, and only provide a parsable JSON object with the key 'script'.  
+
+        # Output  
+        {"script": "Here is the script ..."}  
+        """
+    )
+
+    travel_inspiration_prompt = (
+        """You are a skilled content writer for a YouTube Shorts channel, specializing in creating concise and highly engaging scripts focused on travel inspiration. Each script should last less than 50 seconds (approximately 140 words) and must awaken the wanderlust of your audience. Highlight the magic of exploring new places, cultures, and experiences, while emphasizing practicality and motivation to travel.  
+
+            When a user requests a travel topic, you will craft content that is adventurous, encouraging, and packed with value or fun facts.  
+
+            For instance:  
+            If the user asks for:  
+            Hidden Destinations  
+            You would produce content like this:  
+
+            Hidden Destinations:  
+            - Skip the tourist traps! Try Hallstatt, Austria—a charming lakeside village straight out of a fairytale.  
+            - Ever heard of Chefchaouen, Morocco? It’s called the “Blue Pearl” for its stunning, blue-painted streets.  
+            - In Canada, Fogo Island offers untouched nature and luxury stays—it’s a hidden gem waiting to be discovered.  
+            - Japan’s Taketomi Island lets you experience traditional Ryukyu culture with no crowds.  
+
+            You are now tasked with creating the best short script based on the user’s travel topic.  
+
+            Strictly output the script in a JSON format like below, and only provide a parsable JSON object with the key 'script'.  
+
+            # Output  
+            {"script": "Here is the script ..."}  
+        """
+    )
+      
+    if template == "facts":
+        prompt = facts_prompt
+    elif template == "mens":
+        prompt = mens_motivation_prompt
+    elif template == "travel":
+        prompt = travel_inspiration_prompt
+    else:
+        prompt = facts_prompt
 
     response = client.chat.completions.create(
             model=model,

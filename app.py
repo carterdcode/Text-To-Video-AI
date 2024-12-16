@@ -12,16 +12,19 @@ from utility.render.render_engine import get_output_media
 from utility.video.video_search_query_generator import getVideoSearchQueriesTimed, merge_empty_intervals
 import argparse
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Generate a video from a topic.")
-    parser.add_argument("topic", type=str, help="The topic for the video")
+    parser = argparse.ArgumentParser(description="Generate a video from a template and topic. The templates are: facts, mens, travel")
+    parser.add_argument("template", type=str, help="The template for the video", default="facts")
+    parser.add_argument("topic", type=str, help="The specific topic for the video")
 
     args = parser.parse_args()
+    SAMPLE_TEMPLATE = args.template
     SAMPLE_TOPIC = args.topic
     SAMPLE_FILE_NAME = "audio_tts.wav"
     VIDEO_SERVER = "pexel"
 
-    response = generate_script(SAMPLE_TOPIC)
+    response = generate_script(SAMPLE_TEMPLATE, SAMPLE_TOPIC)
     print("script: {}".format(response))
 
     asyncio.run(generate_audio(response, SAMPLE_FILE_NAME))
