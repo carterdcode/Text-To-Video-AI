@@ -1,8 +1,7 @@
 import os
 import asyncio
-from utility.gpt.gpt4free import gpt4free
-
-async def generate_script_free(template, topic):
+import utility.gpt4free.g4f.client as gpt4free
+def generate_script_free(template, topic):
     facts_prompt = (
         """You are a seasoned content writer for a YouTube Shorts channel, specializing in facts videos. 
         Your fact shorts are concise, each lasting less than 50 seconds (approximately 140 words). 
@@ -90,7 +89,7 @@ async def generate_script_free(template, topic):
     else:
         prompt = facts_prompt
 
-    response = await gpt4free.Completion.create(
+    response = gpt4free.Completion.create(
         provider=gpt4free.Provider.You,
         prompt=prompt + "\n\n" + topic,
         model="gpt-4"
