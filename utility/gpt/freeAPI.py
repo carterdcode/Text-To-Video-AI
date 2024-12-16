@@ -1,6 +1,10 @@
 import os
 import asyncio
-import utility.gpt4free.g4f.client as gpt4free
+import g4f 
+from g4f import Client
+import json
+
+client = Client()
 def generate_script_free(template, topic):
     facts_prompt = (
         """You are a seasoned content writer for a YouTube Shorts channel, specializing in facts videos. 
@@ -89,11 +93,17 @@ def generate_script_free(template, topic):
     else:
         prompt = facts_prompt
 
-    response = gpt4free.Completion.create(
-        provider=gpt4free.Provider.You,
-        prompt=prompt + "\n\n" + topic,
-        model="gpt-4"
-    )
+    prompt=prompt + "\n\n" + topic
+    response = client(
+        model="gpt-4o-mini",
+        messages=[
+        {
+            "role": "user",
+            "content": prompt         
+            }
+        ]
+
+                )
 
     content = response['text']
     try:
