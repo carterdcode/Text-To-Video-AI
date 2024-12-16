@@ -1,6 +1,6 @@
 import os
 import asyncio
-import g4f 
+import utility.gpt4free.g4f as g4f
 from g4f import Client
 import json
 
