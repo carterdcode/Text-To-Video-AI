@@ -4,7 +4,7 @@ import edge_tts
 import json
 import asyncio
 import whisper_timestamped as whisper
-from utility.gpt.gpt4free import generate_script_free
+from utility.gpt.freeAPI import generate_script_free
 from utility.audio.audio_generator import generate_audio
 from utility.captions.timed_captions_generator import generate_timed_captions
 from utility.video.background_video_generator import generate_video_url
