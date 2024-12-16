@@ -2,16 +2,9 @@ import os
 from openai import OpenAI
 import json
 
-if len(os.environ.get("GROQ_API_KEY")) > 30:
-    from groq import Groq
-    model = "mixtral-8x7b-32768"
-    client = Groq(
-        api_key=os.environ.get("GROQ_API_KEY"),
-        )
-else:
-    OPENAI_API_KEY = os.getenv('OPENAI_KEY')
-    model = "gpt-4o"
-    client = OpenAI(api_key=OPENAI_API_KEY)
+
+model = "gpt-4o-mini"
+client = OpenAI(api_key="zu-83470c0344c74bbf58afbcba2c806c92", base_url = "https://api.zukijourney.com/v1")
 
 def generate_script(template, topic):
     facts_prompt = (
@@ -101,14 +94,14 @@ def generate_script(template, topic):
     else:
         prompt = facts_prompt
 
-    response = client.chat.completions.create(
+    script = client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": topic}
             ]
         )
-    content = response.choices[0].message.content
+    content = script.choices[0].message.content
     try:
         script = json.loads(content)["script"]
     except Exception as e:

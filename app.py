@@ -4,13 +4,13 @@ import edge_tts
 import json
 import asyncio
 import whisper_timestamped as whisper
-from utility.gpt.freeAPI import generate_script_free
 from utility.audio.audio_generator import generate_audio
 from utility.captions.timed_captions_generator import generate_timed_captions
 from utility.video.background_video_generator import generate_video_url
 from utility.render.render_engine import get_output_media
 from utility.video.video_search_query_generator import getVideoSearchQueriesTimed, merge_empty_intervals
 import argparse
+import utility.script.script_generator as script_generator
 
 
 if __name__ == "__main__":
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     SAMPLE_FILE_NAME = "audio_tts.wav"
     VIDEO_SERVER = "pexel"
 
-    response = generate_script_free(SAMPLE_TEMPLATE, SAMPLE_TOPIC)
+    response = script_generator.generate_script(SAMPLE_TEMPLATE, SAMPLE_TOPIC)
     print("script: {}".format(response))
 
     asyncio.run(generate_audio(response, SAMPLE_FILE_NAME))

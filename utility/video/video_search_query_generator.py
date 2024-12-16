@@ -5,16 +5,8 @@ import re
 from datetime import datetime
 from utility.utils import log_response,LOG_TYPE_GPT
 
-if len(os.environ.get("GROQ_API_KEY")) > 30:
-    from groq import Groq
-    model = "llama3-70b-8192"
-    client = Groq(
-        api_key=os.environ.get("GROQ_API_KEY"),
-        )
-else:
-    model = "gpt-4o"
-    OPENAI_API_KEY = os.environ.get('OPENAI_KEY')
-    client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key = "zu-83470c0344c74bbf58afbcba2c806c92", base_url = "https://api.zukijourney.com/v1")
+model = "gpt-4o-mini"
 
 log_directory = ".logs/gpt_logs"
 
