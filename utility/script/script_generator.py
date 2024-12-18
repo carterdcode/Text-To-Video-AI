@@ -100,6 +100,7 @@ def generate_script(template, topic):
                      {"role": "user", "content": topic}]
     }
 
+    #TODO: Convert to client call instead of requests to allow retry and block ChatGPTEs
     # Send the POST request to the chat completions endpoint 
     response = requests.post("http://localhost:1337/v1/chat/completions", json=payload)
 
@@ -111,7 +112,8 @@ def generate_script(template, topic):
         try:
             content = response.json()["choices"][0]["message"]["content"]
             print("got content: ", content)
-            #decode JSON string
+            #remove \ and decode JSON string
+            content =  content.replace("\\", "")
             script = json.loads(content)["script"]
             return script
         except Exception as e:
@@ -123,7 +125,7 @@ def generate_script(template, topic):
                 return script
             except Exception as e:
                 print("Failed to parse JSON after fixing: \n", content, "\n")
-                print("getImagePromptsTimed returned None because of an exception, namely:")
+                print("generate_script returned None because of an exception, namely:")
                 print(e)
                 return None
     else:

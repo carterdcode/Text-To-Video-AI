@@ -34,10 +34,12 @@ if __name__ == "__main__":
     timed_captions = generate_timed_captions(SAMPLE_FILE_NAME)
     print(timed_captions)
 
-    search_terms = getImagePromptsTimed(response, timed_captions)
+    print("CALLING getImagePromptsTimed USING script_generator.generate_script output: ", response)
+    print("CALLING getImagePromptsTimed USING generate_timed_captions output: ", timed_captions)
+    timed_video_prompts = getImagePromptsTimed(response, timed_captions)
     background_video_urls = None
-    if search_terms is not None:
-        background_video_urls = generate_video_url(timed_video_prompts=search_terms)
+    if timed_video_prompts is not None:
+        background_video_urls = generate_video_url(timed_video_prompts)
         print(background_video_urls)
     else:
         print("No background video")

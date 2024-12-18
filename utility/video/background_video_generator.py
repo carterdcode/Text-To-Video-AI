@@ -7,11 +7,15 @@ from g4f.Provider import (
     Blackbox, # flux
     Blackbox2, # flux
     Airforce, # flux-pro
+    Blackbox, # 4o
+    DarkAI, #4o
+    Liaobots, # 4o
     RetryProvider
+
 )
 
-client = Client(
-    image_provider = RetryProvider([
+img_client = Client(
+    provider = RetryProvider([
         PollinationsAI, # flux-pro
         Blackbox, # flux
         Blackbox2, # flux
@@ -20,7 +24,7 @@ client = Client(
 )
 
 def generate_image(image_prompt):
-    response = client.images.generate(
+    response = img_client.images.generate(
         model = "flux",
         prompt=image_prompt,
         response_format="url")
@@ -40,25 +44,13 @@ def combine_images(image_prompts):
     for prompt in image_prompts:
         image_urls.append(generate_image(prompt))
     return image_urls
-    
 
 def generate_video_url(timed_video_prompts):
-    print("timed_video_prompts:", timed_video_prompts)  # Debugging statement to print the input
-    timed_image_urls = []
-    used_links = []
-    for item in timed_video_prompts:
-        if not isinstance(item, list) or len(item) != 2:
-            print(f"Skipping invalid item: {item}")
-            continue
-        (t1, t2), prompt_list = item
-        if not isinstance(prompt_list, list):
-            print(f"Skipping invalid prompt list: {prompt_list}")
-            continue
-        url = None
-        for prompt in prompt_list:
-            url = generate_image(prompt)
-            if url:
-                used_links.append(url.split('.hd')[0])
-                break
-        timed_image_urls.append([[t1, t2], url])
-    return timed_image_urls
+    image_prompts = []
+    for [t1,t2], [prompt] in timed_video_prompts:
+        # print the type of time_frame and prompt
+        print("t1 is of type: ", type(t1), " t2 is of type: ", t2, " and prompt is of type: ", type(prompt))
+        image_prompts.append(prompt)
+    image_urls = combine_images(image_prompts)
+    return image_urls
+
