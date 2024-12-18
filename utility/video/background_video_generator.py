@@ -1,68 +1,64 @@
 import os 
 import requests
 from utility.utils import log_response,LOG_TYPE_PEXEL
+from g4f.client   import Client
+from g4f.Provider import (
+    PollinationsAI, # flux-pro
+    Blackbox, # flux
+    Blackbox2, # flux
+    Airforce, # flux-pro
+    RetryProvider
+)
 
-PEXELS_API_KEY = "qhJ5iOTWhdAjGkrm7ynfRVtEKP95FCYP3uxPuQG1nQ3U5NMe92ffBLa6"
+client = Client(
+    image_provider = RetryProvider([
+        PollinationsAI, # flux-pro
+        Blackbox, # flux
+        Blackbox2, # flux
+        Airforce, # flux-pro
+    ])
+)
 
-def search_videos(query_string, orientation_landscape=True):
-   
-    url = "https://api.pexels.com/videos/search"
-    headers = {
-        "Authorization": PEXELS_API_KEY,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
-    params = {
-        "query": query_string,
-        "orientation": "landscape" if orientation_landscape else "portrait",
-        "per_page": 15
-    }
+def generate_image(image_prompt):
+    response = client.images.generate(
+        model = "flux",
+        prompt=image_prompt,
+        response_format="url")
+    try :
+        image_url = response.data[0].url
+        log_response(LOG_TYPE_PEXEL,image_prompt,response.json())
+    except Exception as e:
+        print("Error in response",e)
 
-    response = requests.get(url, headers=headers, params=params)
-    json_data = response.json()
-    log_response(LOG_TYPE_PEXEL,query_string,response.json())
-   
-    return json_data
-
-
-def getBestVideo(query_string, orientation_landscape=True, used_vids=[]):
-    vids = search_videos(query_string, orientation_landscape)
-    videos = vids['videos']  # Extract the videos list from JSON
-
-    # Filter and extract videos with width and height as 1920x1080 for landscape or 1080x1920 for portrait
-    if orientation_landscape:
-        filtered_videos = [video for video in videos if video['width'] >= 1920 and video['height'] >= 1080 and video['width']/video['height'] == 16/9]
-    else:
-        filtered_videos = [video for video in videos if video['width'] >= 1080 and video['height'] >= 1920 and video['height']/video['width'] == 16/9]
-
-    # Sort the filtered videos by duration in ascending order
-    sorted_videos = sorted(filtered_videos, key=lambda x: abs(15-int(x['duration'])))
-
-    # Extract the top 3 videos' URLs
-    for video in sorted_videos:
-        for video_file in video['video_files']:
-            if orientation_landscape:
-                if video_file['width'] == 1920 and video_file['height'] == 1080:
-                    if not (video_file['link'].split('.hd')[0] in used_vids):
-                        return video_file['link']
-            else:
-                if video_file['width'] == 1080 and video_file['height'] == 1920:
-                    if not (video_file['link'].split('.hd')[0] in used_vids):
-                        return video_file['link']
-    print("NO LINKS found for this round of search with query :", query_string)
-    return None
+    log_response(LOG_TYPE_PEXEL,image_prompt,response.json())
+    
+    return image_url
 
 
-def generate_video_url(timed_video_searches,video_server):
-        timed_video_urls = []
-        if video_server == "pexel":
-            used_links = []
-            for (t1, t2), search_terms in timed_video_searches:
-                url = ""
-                for query in search_terms:
-                  
-                    url = getBestVideo(query, orientation_landscape=True, used_vids=used_links)
-                    if url:
-                        used_links.append(url.split('.hd')[0])
-                        break
-                timed_video_urls.append([[t1, t2], url])
-        return timed_video_urls
+def combine_images(image_prompts):
+    image_urls = []
+    for prompt in image_prompts:
+        image_urls.append(generate_image(prompt))
+    return image_urls
+    
+
+def generate_video_url(timed_video_prompts):
+    print("timed_video_prompts:", timed_video_prompts)  # Debugging statement to print the input
+    timed_image_urls = []
+    used_links = []
+    for item in timed_video_prompts:
+        if not isinstance(item, list) or len(item) != 2:
+            print(f"Skipping invalid item: {item}")
+            continue
+        (t1, t2), prompt_list = item
+        if not isinstance(prompt_list, list):
+            print(f"Skipping invalid prompt list: {prompt_list}")
+            continue
+        url = None
+        for prompt in prompt_list:
+            url = generate_image(prompt)
+            if url:
+                used_links.append(url.split('.hd')[0])
+                break
+        timed_image_urls.append([[t1, t2], url])
+    return timed_image_urls

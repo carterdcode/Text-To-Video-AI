@@ -8,7 +8,7 @@ from utility.audio.audio_generator import generate_audio
 from utility.captions.timed_captions_generator import generate_timed_captions
 from utility.video.background_video_generator import generate_video_url
 from utility.render.render_engine import get_output_media
-from utility.video.video_search_query_generator import getVideoSearchQueriesTimed, merge_empty_intervals
+from utility.video.video_search_query_generator import getImagePromptsTimed, merge_empty_intervals
 import argparse
 import utility.script.script_generator as script_generator
 
@@ -34,19 +34,18 @@ if __name__ == "__main__":
     timed_captions = generate_timed_captions(SAMPLE_FILE_NAME)
     print(timed_captions)
 
-    search_terms = getVideoSearchQueriesTimed(response, timed_captions)
-    print(search_terms)
-
+    search_terms = getImagePromptsTimed(response, timed_captions)
     background_video_urls = None
     if search_terms is not None:
-        background_video_urls = generate_video_url(search_terms, VIDEO_SERVER)
+        background_video_urls = generate_video_url(timed_video_prompts=search_terms)
         print(background_video_urls)
     else:
         print("No background video")
+        
 
-    background_video_urls = merge_empty_intervals(background_video_urls)
+    merged_background_video_urls = merge_empty_intervals(background_video_urls)
 
-    if background_video_urls is not None:
+    if merged_background_video_urls is not None:
         video = get_output_media(SAMPLE_FILE_NAME, timed_captions, background_video_urls, VIDEO_SERVER)
         print(video)
     else:

@@ -2,9 +2,9 @@ import os
 from openai import OpenAI
 import json
 import requests
+from utility.video.video_search_query_generator import fix_json
 
-
-model = "gpt-4o-mini"
+model = "gpt-4o"
 
 def generate_script(template, topic):
     facts_prompt = (
@@ -61,9 +61,9 @@ def generate_script(template, topic):
     )
 
     travel_inspiration_prompt = (
-        """You are a skilled content writclser for a YouTube Shorts channel, specializing in creating concise and highly engaging scripts focused on travel inspiration. Each script should last less than 50 seconds (approximately 140 words) and must awaken the wanderlust of your audience. Highlight the magic of exploring new places, cultures, and experiences, while emphasizing practicality and motivation to travel.  
+        """You are a skilled content writer for a YouTube Shorts channel, specializing in creating concise and highly engaging scripts focused on travel inspiration. Each script should last less than 50 seconds (approximately 140 words) and must awaken the wanderlust of your audience. Highlight the magic of exploring new places, cultures, and experiences, while emphasizing practicality and motivation to travel.  
 
-            When a user requests a travel topic, you will craft content that is adventurous, encouraging, and packed with value or fun facts.  
+            When a user requests a travel topic, you will craft content that is adventurous, encouraging, and packed with value or fun facts. It should not include emojis.
 
             For instance:  
             If the user asks for:  
@@ -78,8 +78,7 @@ def generate_script(template, topic):
 
             You are now tasked with creating the best short script based on the user’s travel topic.  
 
-            Strictly output the script in a JSON format like below, and only provide a parsable JSON object with the key 'script'.  
-
+            Strictly output the script in the JSON format as below, and only provide a parsable JSON object with the key 'script'  
             # Output  
             {"script": "Here is the script ..."}  
         """
@@ -108,19 +107,27 @@ def generate_script(template, topic):
     if response.status_code == 200:
         # Print the response text
         print("\n" + response.text + "\n")
-
-        content = response.json()["choices"][0]["message"]["content"]
         
         try:
+            content = response.json()["choices"][0]["message"]["content"]
+            print("got content: ", content)
+            #decode JSON string
             script = json.loads(content)["script"]
+            return script
         except Exception as e:
-            json_start_index = content.find('{')
-            json_end_index = content.rfind('}')
-            content = content[json_start_index:json_end_index+1]
-            script = json.loads(content)["script"]
-            print("script: " + script)
-        return script
+            print("Unexpected response format or parsing error:", e)
+            print("Trying to fix json")
+            fix_json(content)
+            try:
+                script = json.loads(content)["script"]
+                return script
+            except Exception as e:
+                print("Failed to parse JSON after fixing: \n", content, "\n")
+                print("getImagePromptsTimed returned None because of an exception, namely:")
+                print(e)
+                return None
     else:
         print(f"Request failed with status code {response.status_code}")
         print(" \n Response:", response.text + "\n")
+        return None
         
