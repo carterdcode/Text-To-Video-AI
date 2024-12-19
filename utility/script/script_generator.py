@@ -1,7 +1,8 @@
 import os
-from openai import OpenAI
 import json
+from openai import OpenAI
 import requests
+
 from utility.video.video_search_query_generator import fix_json
 
 model = "gpt-4o"
@@ -83,15 +84,24 @@ def generate_script(template, topic):
             {"script": "Here is the script ..."}  
         """
     )
-      
+
+    # Load the prompts from the prompts.json file and select the appropriate prompt 
+    # based on the template given when calling the function
+    #open current directory and read the script_prompts.json file
+    curr_dir = os.path.dirname(os.path.realpath(__file__))
+    print("Current directory: ", curr_dir)
+    with open(os.path.join(curr_dir, "script_prompts.json"), "r") as file:
+        data = json.load(file)
     if template == "facts":
-        prompt = facts_prompt
+        print("Template is facts")
+        prompt = data.get("facts_prompt", {}).get("prompt", "Prompt not found")
+        print("Prompt is: ", prompt)
     elif template == "mens":
-        prompt = mens_motivation_prompt
+        prompt = data["mens_motivation_prompt"]
     elif template == "travel":
-        prompt = travel_inspiration_prompt
+        prompt = data["travel_prompt"]
     else:
-        prompt = facts_prompt
+        prompt = "Invalid template provided. Please provide a valid template: facts, mens, or travel."
 
     payload = {
         "model": "gpt-4o",
@@ -107,11 +117,11 @@ def generate_script(template, topic):
     # Check if the request was successful
     if response.status_code == 200:
         # Print the response text
-        print("\n" + response.text + "\n")
+        print("\n Response.text:\n" + response.text + "\n")
         
         try:
             content = response.json()["choices"][0]["message"]["content"]
-            print("got content: ", content)
+            print("\n content:\n ", content)
             #remove \ and decode JSON string
             content =  content.replace("\\", "")
             script = json.loads(content)["script"]

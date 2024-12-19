@@ -20,17 +20,18 @@ img_client = Client(
         Blackbox, # flux
         Blackbox2, # flux
         Airforce, # flux-pro
-    ])
+    ], shuffle=True)
 )
 
 def generate_image(image_prompt):
     response = img_client.images.generate(
         model = "flux",
+        width = 1080,
+        height = 1920,
         prompt=image_prompt,
         response_format="url")
     try :
         image_url = response.data[0].url
-        log_response(LOG_TYPE_PEXEL,image_prompt,response.json())
     except Exception as e:
         print("Error in response",e)
 
@@ -38,19 +39,41 @@ def generate_image(image_prompt):
     
     return image_url
 
+def generate_timed_image_urls(timed_video_prompts):
+    timed_image_urls = []
+    for item in timed_video_prompts:
+        start_time = item['s']
+        end_time= item['e']
+        prompt = item['p']
+        print("Currently generating: ", prompt)
+        timed_image_urls.append([[start_time, end_time],generate_image(prompt)])
+        print("timed_image_urls is: ", timed_image_urls)
+    return timed_image_urls
 
-def combine_images(image_prompts):
-    image_urls = []
-    for prompt in image_prompts:
-        image_urls.append(generate_image(prompt))
+import concurrent.futures
+
+def generate_images(image_prompts):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_prompt = {executor.submit(generate_image, prompt): prompt for prompt in image_prompts}
+        image_urls = {}
+        for future in concurrent.futures.as_completed(future_to_prompt):
+            prompt = future_to_prompt[future]
+            try:
+                print("Currently generating: ", prompt)
+                image_urls[prompt] = future.result()
+            except Exception as e:
+                print(f"Error generating image for prompt {prompt}: {e}")
     return image_urls
 
-def generate_video_url(timed_video_prompts):
-    image_prompts = []
-    for [t1,t2], [prompt] in timed_video_prompts:
-        # print the type of time_frame and prompt
-        print("t1 is of type: ", type(t1), " t2 is of type: ", t2, " and prompt is of type: ", type(prompt))
-        image_prompts.append(prompt)
-    image_urls = combine_images(image_prompts)
-    return image_urls
-
+def generate_timed_image_urls(timed_video_prompts):
+    prompts = [item['p'] for item in timed_video_prompts]
+    image_urls = generate_images(prompts)
+    
+    timed_image_urls = []
+    for item in timed_video_prompts:
+        start_time = item['s']
+        end_time = item['e']
+        prompt = item['p']
+        timed_image_urls.append([[start_time, end_time], image_urls.get(prompt)])
+        print("timed_image_urls is: ", timed_image_urls)
+    return timed_image_urls

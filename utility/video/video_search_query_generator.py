@@ -19,17 +19,12 @@ client = Client(
 
 log_directory = ".logs/gpt_logs"
 
-prompt = """# Instructions
-
-Given the following video script and timed captions, select a total of 12 time frames and create descriptive prompts to be used for image generation. 
-The prompts should be related to the input. If a caption is vague or general, you may choose something similar, take context from surrounding words or discard it entirely. 
-Ensure that the prompts for each timeframe you choose are strictly consecutive and cover the entire length of the video. 
-Each prompt should cover between 6-10 seconds, you can amend the times so that they are consecutive. 
-Please handle all edge cases, such as overlapping time segments and vague or general captions.
-If the caption is 'Only 12 astronauts have walked on the Moon, all part of NASA's Apollo missions.', the prompt could be 'Long shot of an astronaut far away in a Martian landscape, under an otherworldly sky.' 
+prompt1 = """# Instructions
+Given the following video script and timed captions, create 12 descriptive prompts to be used for image generation. Each prompt must be at maximum 120 characters.
+The prompts should be related to the input. If a caption is vague or general, you may choose something similar or take context from surrounding words.
+Ensure that the prompts are equally distributed throughout the video and are relevant to the content.
 
 Important Guidelines:
-
 Use only English in your prompts.
 Each image prompt must depict something visual.
 Use descriptive words like “eerie forest”, “serene seascape”, or “futuristic metropolis” to set the mood and feeling.
@@ -43,20 +38,31 @@ Mention colors you want, like “warm hues of a sunset” or “cool metal sheen
 ['A charming log cabin in the forest on a beautiful, sunny day.'] <= GOOD, because it's 1 string.
 ['Un chien', 'une voiture rapide', 'une maison rouge'] <= BAD, because the text query is NOT in English.
 
+Here are some examples of good prompts:
+'Long shot of an astronaut far away in a Martian landscape, under an otherworldly sky.' 
+'Serene mountain lake at sunset, with snow-capped peaks reflected in crystal-clear water.'
+
+IMPORTANT:
+The output should be in JSON format, giving comma separated prompts:
+["prompt 1 goes here", "prompt 2 goes here", ...]
+Your response should be ONLY THE RESPONSE, no extra text or data. Remember you must create exactly 15 prompts each prompt is MAXIMUM 110 characters."""
+
+prompt2 = """Using the following timed captions and list of prompts, please match each of the 12 of the prompts to the most relevant captions, and create suitable start and end times. Prompt start and end times do not have to exactly match the captions, the goal is to match the prompts to the captions as closely as possible and have 4-6 seconds between each prompt. 
+It is vital that there is no time between the start and end times of the prompts, so if a prompt ends at 5 seconds, the next prompt should start at 5 seconds.
+
 IMPORTANT:
 The output should be in JSON format, giving a start time (s) and an end time (e) with one prompt (p):
-[{"s":"starttimeinseconds","e":"endtimeinseconds","p":"prompt 1 goes here"},{"s":"starttimeinseconds","e":"endtimeinseconds","p":"prompt 2 goes here"},...]
-Your response should be ONLY THE RESPONSE, no extra text or data. Remember you must create exactly 12 prompts for the entire video.
-  """
+[{"s":"starttimeinseconds","e":"endtimeinseconds","p":"prompt 1 goes here"},{"s":"starttimeinseconds.deciseconds","e":"endtimeinseconds.deciseconds","p":"prompt 2 goes here"},...]
+Your response should be ONLY THE RESPONSE, no extra text or data. Remember you must match exactly 12 prompts to cover the entirety of the video. 
+The final prompt should have an end timestamp that matches the final caption timestamp."""
 
 def fix_json(json_str):
     print("Original JSON: ", json_str)
     json_str = json_str.strip()
-   
+   #remove ```json from the start of the string and ``` from the end of the string
+    json_str = json_str.replace("```json", "").replace("```", "")
     # Replace typographical quotes with straight quotes
     json_str = json_str.replace("“", "\"").replace("”", "\"").replace("‘", "\"").replace("’", "\"")
-    #remove all { and } from the string
-    json_str = json_str.replace("{", "").replace("}", "")
     # Replace all " which has at least one letter directly before and after it with \'
     json_str = re.sub(r'(?<=[a-zA-Z])\"(?=[a-zA-Z])', "\'", json_str)
     # Ensure the JSON starts and ends with square brackets 
@@ -68,14 +74,11 @@ def fix_json(json_str):
     print("Fixed JSON String:", json_str)
     return json_str
 
-def call_OpenAI(script,captions_timed):
+def call_OpenAI(prompt, script,captions_timed):
     user_content = """Script: {}
 Timed Captions:{}
 """.format(script,"".join(map(str,captions_timed)))
     print("user_content is: ", user_content)
-    
-    #TODO: Convert to client call instead of requests to allow retry
-    #response = requests.post("http://localhost:1337/v1/chat/completions", json=payload)
 
     payload = {
             "model": "gpt-4o",
@@ -85,10 +88,10 @@ Timed Captions:{}
             }
     
     try: 
-        response = client.chat.completions.create(
-    )
-        response_message_content = response.choices[0].message.content  
-        print("response is: ",response)
+        response = requests.post("http://localhost:1337/v1/chat/completions", json=payload)
+        #print("response is: ", response)
+        #print("response.text is: ", response.text)
+        message = response.json()["choices"][0]["message"]["content"]
     
     except Exception as e:  
         print("Error in response",e)
@@ -97,16 +100,13 @@ Timed Captions:{}
 
 
      # Check if the request was successful
-    if response_message_content is not None:
+    if response.status_code == 200:
         try: 
-            print("response msg content: ", response_message_content)
-            #load the response text as a JSON object
-            #response_json = json.loads(fix_json("["+response_message_content+"]"))
-            print("CALL_OPENAI RETURNS response.choices[0].message.content WHICH IS:", response_message_content)
-            return response_message_content
+            print("CALL_OPENAI RETURNS response.choices[0].message.content WHICH IS:", message)
+            return message
         except (KeyError, json.JSONDecodeError) as e:
             print("Unexpected response format or parsing error:", e)
-            print("Response.text is: ", response_message_content)
+            print("Response.text is: ", message)
             return None
     else:
         print("Request failed")
@@ -117,6 +117,7 @@ def getImagePromptsTimed(script, captions_timed):
     print("captions_timed is: ", captions_timed)
     print("script is: ", script)
     if captions_timed:
+        content = call_OpenAI(prompt2, (call_OpenAI(prompt1,script, captions_timed).replace("'", '\'')), captions_timed).replace("'", '\'')
         # Get the end time of the last caption
         end_time = captions_timed[-1][0][1]
         print("end is: ", end_time)
@@ -124,35 +125,37 @@ def getImagePromptsTimed(script, captions_timed):
         print("captions_timed is empty")
         return None
     try:
-        out = [ [[0, 0], [""]], [[0, 0], [""]] ] # Initialize the output with an empty prompt
-        while out[-1][0][1] < float(end_time):  # Loop until the last prompt ends at the end of the video
-            #out[-1] = last element of out 
-            #out[-1][0] = first element of last element of out (i.e [starttime, endtime] of the last prompt)
-            #out[-1][0][1] = endtime of the last prompt
-            content = call_OpenAI(script, captions_timed).replace("'", '\'')  # Call OpenAI and clean content
+        out = [{"s": "0", "e": "0", "p": ""}] # Initialize the output with an empty prompt
+        print("out initialised correctly")
+        while float(out[-1]["e"]) < float(end_time):  # Loop until the last prompt ends at the end of the video
             try:
                 out = json.loads(content)  # Try to parse JSON
                 print("out structure: ", out)
                 if len(out) > 1:
-                    print("last prompt end time: ", out[-1][0][1])
+                    print("last prompt end time: ", out[-1]["e"])
+                    return out
+                else:
+                    print("last prompt end time: ", out[0][0][1])
             except json.JSONDecodeError as e:
                 print("error on json.loads(content)")
-                print("getImagePromptsTimed had an exception, namely:")
+                print("getImagePromptsTimed had an exception ON LINE 158, namely:")
                 print(e)
                 print("trying to fix JSON")
-                content = fix_json(content.replace("```json", "").replace("```", "")).strip()  # Fix JSON if parsing fails
                 try:
+                    content = fix_json(content.replace("```json", "").replace("```", "")).strip()  # Fix JSON if parsing fails
                     out = json.loads(content)  # Try to parse fixed JSON
                     print("fixing JSON worked")
+                    print("returning out: ", out)
+                    return out
                 except json.JSONDecodeError as e:
                     print("Failed to parse JSON after fixing: \n", content, "\n")
-                    print("getImagePromptsTimed returned None because of an exception, namely:")
+                    print("getImagePromptsTimed returned None ON LINE 170, namely:")
                     print(e)
                     return None  # Return None if parsing fails again
         print("content returned by getImagePromptsTimed is: ", content)
-        return content  # Return the final content
+        return out  # Return the final content
     except Exception as e:
-        print("getImagePromptsTimed returned None because of an exception, namely:")
+        print("getImagePromptsTimed returned None because of an exception ON LINE 152, namely:")
         print(e)
         print("out is: ", out)
         return None  # Return None if any other exception occurs
