@@ -1,0 +1,16 @@
+Templates to add:
+
+Storytelling and Short Fiction - get some good ones from reddit, create a "reddit" template making it look like it was posted there, generate story using ai.
+Life Hacks & Productivity Tips - easy 
+Motivational Quotes and Affirmations - easy
+Daily Jokes and Comedy - easy
+Historical Facts and Fun Trivia - random trivia 
+Pop Culture News - scrape news headlines, tell chatgpt to write about it
+Challenges and Games - would you rather - Like for X comment for Y.
+"What If" Simulators based on comments
+The story of XYZ e.g. "how the potato chip was invented.” 
+Fake Text Threads
+Podcast Snippets
+Data/infographic based:
+	- Present shocking or interesting statistics with colorful visuals.
+	- Showcase historical events or trends ("evolution of smartphones in 60 seconds”).

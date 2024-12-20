@@ -1,4 +1,4 @@
-import time
+from datetime import datetime
 import os
 import tempfile
 import zipfile
@@ -30,8 +30,7 @@ def get_program_path(program_name):
     program_path = search_program(program_name)
     return program_path
 
-def get_output_media(audio_file_path, timed_captions, timed_generated_image_urls):
-    OUTPUT_FILE_NAME = "rendered_video.mp4"
+def get_output_media(audio_file_path, timed_captions, timed_generated_image_urls, topic, captions):
     print("timed_generated_image_urls is: ", timed_generated_image_urls)
     print("timed_captions is: ", timed_captions)
     image_clips = []
@@ -54,20 +53,34 @@ def get_output_media(audio_file_path, timed_captions, timed_generated_image_urls
         print("text is:", text)
         text_clip = TextClip(text, fontsize=80, color="white", stroke_width=5, stroke_color="black", method="caption").set_start(start_time).set_end(end_time).set_position(("center", "bottom"))
         text_clips.append(text_clip)
-    video = CompositeVideoClip(image_clips)
+    video_no_captions = CompositeVideoClip(image_clips)
     if audio_clips:
         audio = CompositeAudioClip(audio_clips)
-        video.duration = audio.duration
-        video.audio = audio
+        video_no_captions.duration = audio.duration
+        video_no_captions.audio = audio
     if text_clips:
-        video = CompositeVideoClip([video] + text_clips)
+        video_with_captions = CompositeVideoClip([video_no_captions] + text_clips)
 
-    print("writing video to filepath ", OUTPUT_FILE_NAME)
-    video.write_videofile(OUTPUT_FILE_NAME, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
+    #set name to date and time.mp4
+
+    captions_output_file_name = datetime.now().strftime(f"C_%d_%m_%y_%H_%M_{topic}.mp4")
+    output_file_name = f"NC_{int(time.time())}_{topic}.mp4"
+    if captions == "yes":
+        print("writing video to filepath ", captions_output_file_name)
+        video_with_captions.write_videofile(captions_output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
+    elif captions == "no":
+        print("writing video to filepath ", output_file_name)
+        video_no_captions.write_videofile(output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
+    elif captions == "both":
+        print("writing video to filepath ", captions_output_file_name)
+        video_with_captions.write_videofile(captions_output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
+        print("writing video to filepath ", output_file_name)
+        video_no_captions.write_videofile(output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
+
     
     # Clean up downloaded files
-    for (start_time, end_time), video_url in timed_generated_image_urls:
+    for (start_time, end_time), image_url in timed_generated_image_urls:
         image_filename = tempfile.NamedTemporaryFile(delete=False).name
         os.remove(image_filename)
 
-    return OUTPUT_FILE_NAME
+    return [output_file_name, captions_output_file_name] if captions == "both" else [output_file_name]

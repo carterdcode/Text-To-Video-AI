@@ -15,32 +15,36 @@ import utility.script.script_generator as script_generator
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a video from a template and topic. The templates are: facts, mens, travel")
-    parser.add_argument("--template", type=str, help="The template for the video", default="facts")
+    parser.add_argument("script_type", type=str, help="The template for the video")
+    parser.add_argument("image_style", type=str, help="The style of images to generate")
     parser.add_argument("topic", type=str, help="The specific topic for the video")
+    parser.add_argument("captions", type=str, help="Whether to render captions in the video, 'yes', 'no', or 'both'")
     # to run the script, use the following command:
-    # python app.py --template facts "The topic of the video"
+    # python app.py --script_type whatif --image_style cartoon --topic "There was no such thing as crime"
 
     args = parser.parse_args()
-    SAMPLE_TEMPLATE = args.template
-    SAMPLE_TOPIC = args.topic
-    SAMPLE_FILE_NAME = "audio_tts.wav"
+    script_type = args.script_type
+    style = args.image_style
+    topic = args.topic
+    captions = args.captions
+    audio_file_name = "audio_tts.wav"
 
-    response = script_generator.generate_script(SAMPLE_TEMPLATE, SAMPLE_TOPIC)
+    response = script_generator.generate_script(script_type, topic)
     print("script: {}".format(response))
 
-    asyncio.run(generate_audio(response, SAMPLE_FILE_NAME))
+    asyncio.run(generate_audio(response, audio_file_name))
 
-    timed_captions = generate_timed_captions(SAMPLE_FILE_NAME)
+    timed_captions = generate_timed_captions(audio_file_name)
     print(timed_captions)
 
-    print("CALLING getImagePromptsTimed USING script_generator.generate_script output: ", response)
-    print("CALLING getImagePromptsTimed USING generate_timed_captions output: ", timed_captions)
-    timed_image_prompts = getImagePromptsTimed(response, timed_captions)
+    timed_image_prompts = getImagePromptsTimed(response, timed_captions, style)
     timed_generated_image_urls = None
     if timed_image_prompts is not None:
-        timed_generated_image_urls = generate_timed_image_urls(timed_image_prompts)
+        sorted(timed_image_prompts, key=lambda x: x['s'])
+        print("sorted timed_image_prompts is: ", timed_image_prompts)
+        timed_generated_image_urls = generate_timed_image_urls(timed_image_prompts, style)
         print("timed_generated_image_urls is:", timed_generated_image_urls)
-        video = get_output_media(SAMPLE_FILE_NAME, timed_captions, timed_generated_image_urls)
-        print(video)
+        videos = get_output_media(audio_file_name, timed_captions, timed_generated_image_urls, topic.replace(" ", "").replace("?", ""), captions)
+        print(videos)
     else:
-        print("timed_generated_image_urls is None")
+        print("Error in timed_image_prompts, returned none")
