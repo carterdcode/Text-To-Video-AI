@@ -9,6 +9,7 @@ from moviepy.editor import (AudioFileClip, CompositeVideoClip, CompositeAudioCli
 from moviepy.audio.fx.audio_loop import audio_loop
 from moviepy.audio.fx.audio_normalize import audio_normalize
 from moviepy.config import change_settings
+from effects import zoom_in_out_effect
 import requests
 
 def download_file(url, filename):
@@ -43,6 +44,8 @@ def get_output_media(audio_file_path, timed_captions, timed_generated_image_urls
         image_clip = ImageClip(image_filename)
         image_clip = image_clip.set_start(start_time)
         image_clip = image_clip.set_end(end_time)
+        image_clip.duration = float(end_time) - float(start_time)
+        image_clip = zoom_in_out_effect(image_clip)
         image_clips.append(image_clip)
     
     audio_clips = []
@@ -64,7 +67,7 @@ def get_output_media(audio_file_path, timed_captions, timed_generated_image_urls
     #set name to date and time.mp4
 
     captions_output_file_name = datetime.now().strftime(f"C_%d_%m_%y_%H_%M_{topic}.mp4")
-    output_file_name = f"NC_{int(time.time())}_{topic}.mp4"
+    output_file_name = datetime.now().strftime(f"NC_%d_%m_%y_%H_%M_{topic}.mp4")
     if captions == "yes":
         print("writing video to filepath ", captions_output_file_name)
         video_with_captions.write_videofile(captions_output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
@@ -73,9 +76,9 @@ def get_output_media(audio_file_path, timed_captions, timed_generated_image_urls
         video_no_captions.write_videofile(output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
     elif captions == "both":
         print("writing video to filepath ", captions_output_file_name)
-        video_with_captions.write_videofile(captions_output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
+        video_with_captions.write_videofile(captions_output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast', threads=4)
         print("writing video to filepath ", output_file_name)
-        video_no_captions.write_videofile(output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast')
+        video_no_captions.write_videofile(output_file_name, codec='libx264', audio_codec='aac', fps=25, preset='veryfast', threads=4)
 
     
     # Clean up downloaded files
