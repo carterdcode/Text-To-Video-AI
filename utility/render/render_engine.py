@@ -9,7 +9,7 @@ from moviepy.editor import (AudioFileClip, CompositeVideoClip, CompositeAudioCli
 from moviepy.audio.fx.audio_loop import audio_loop
 from moviepy.audio.fx.audio_normalize import audio_normalize
 from moviepy.config import change_settings
-from effects import zoom_in_out_effect
+from utility.render.effects import zoom_in_out_effect
 import requests
 
 def download_file(url, filename):
@@ -45,7 +45,7 @@ def get_output_media(audio_file_path, timed_captions, timed_generated_image_urls
         image_clip = image_clip.set_start(start_time)
         image_clip = image_clip.set_end(end_time)
         image_clip.duration = float(end_time) - float(start_time)
-        image_clip = zoom_in_out_effect(image_clip)
+        #image_clip = zoom_in_out_effect(image_clip)
         image_clips.append(image_clip)
     
     audio_clips = []

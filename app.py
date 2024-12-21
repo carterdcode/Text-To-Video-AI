@@ -11,6 +11,7 @@ from utility.render.render_engine import get_output_media
 from utility.video.video_search_query_generator import getImagePromptsTimed
 import argparse
 import utility.script.script_generator as script_generator
+from utility.script.reddit_script_generator import generate_reddit_script
 
 
 if __name__ == "__main__":
@@ -29,8 +30,10 @@ if __name__ == "__main__":
     captions = args.captions
     audio_file_name = "audio_tts.wav"
 
-    response = script_generator.generate_script(script_type, topic)
-    print("script: {}".format(response))
+    if args.script_type == "reddit":
+        response = generate_reddit_script(topic)
+    else:
+        response = script_generator.generate_script(script_type, topic)
 
     asyncio.run(generate_audio(response, audio_file_name))
 
